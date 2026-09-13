@@ -55,6 +55,7 @@ export default function App() {
         onPlayCard={playCard}
         onPlayHiddenCard={playHiddenCard}
         onContinueAfterRound={continueAfterRound}
+        onLeave={leaveRoom}
       />
     </>
   )
