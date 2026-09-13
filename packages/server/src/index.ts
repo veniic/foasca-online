@@ -4,7 +4,7 @@ import cors from 'cors'
 import { Server, Socket } from 'socket.io'
 import { EngineError } from '@foaica/engine'
 import type { ClientToServerEvents, ServerToClientEvents } from '@foaica/shared'
-import { RoomManager } from './roomManager'
+import { RoomManager } from './roomManager.js'
 
 const PORT = Number(process.env.PORT ?? 3001)
 const CORS_ORIGIN = process.env.CORS_ORIGIN ?? '*'

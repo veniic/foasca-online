@@ -263,7 +263,7 @@ describe('GameRoom — validarea mutărilor pe server', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Runda 14 — cartea finală ascunsă ("LOOK" / "DON'T LOOK")
+// Runda 14 — ordinea corectă: LOOK/DON'T LOOK ÎNAINTE de cerere (PASS/1)
 // ---------------------------------------------------------------------------
 
 function driveToFinalRound(room: GameRoom) {
@@ -283,7 +283,25 @@ function driveToFinalRound(room: GameRoom) {
   }
 }
 
-describe('GameRoom — runda 14, cartea ascunsă (LOOK / DON\'T LOOK)', () => {
+describe("GameRoom — runda 14, ordinea LOOK/DON'T LOOK înainte de cerere", () => {
+  it('Test: runda 14 pornește DIRECT în ROUND_14_LOOK_PHASE, nu în BIDDING', () => {
+    const room = makeRoom(2)
+    room.startGame('p0')
+    driveToFinalRound(room)
+    expect(room.round).toBe(14)
+    expect(room.phase).toBe('ROUND_14_LOOK_PHASE')
+  })
+
+  it('Test: PASS/CERE 1 nu pot fi alese înainte de decizia LOOK/DON\'T LOOK', () => {
+    const room = makeRoom(2)
+    room.startGame('p0')
+    driveToFinalRound(room)
+    const order = room.toClientState('p0').biddingOrder
+    // faza curentă e ROUND_14_LOOK_PHASE, nu BIDDING — o cerere trebuie respinsă
+    expect(() => room.submitBid(order[0], 'PASS')).toThrow()
+    expect(() => room.submitBid(order[0], 1)).toThrow()
+  })
+
   it('Test A: la începutul rundei 14, cartea există dar e ascunsă și decizia nu a fost luată', () => {
     const room = makeRoom(2)
     room.startGame('p0')
@@ -293,16 +311,16 @@ describe('GameRoom — runda 14, cartea ascunsă (LOOK / DON\'T LOOK)', () => {
       const publicPlayer = room.toClientState(id).players.find((p) => p.id === id)!
       expect(publicPlayer.hasAnsweredPeek).toBe(false) // decizia nu a fost luată încă
       expect(publicPlayer.handCount).toBe(1) // cartea există (a fost distribuită)
+      expect(room.toClientState(id).hiddenCardPending).toBe(true)
+      expect(room.toClientState(id).myHand).toEqual([])
     }
   })
 
-  it('Test B: alegerea LOOK (peek) revelează cartea DOAR acelui jucător', () => {
+  it('Test B: alegerea LOOK (peek) revelează cartea DOAR acelui jucător, ÎNAINTE de cerere', () => {
     const room = makeRoom(2)
     room.startGame('p0')
     driveToFinalRound(room)
     const order = room.toClientState('p0').biddingOrder
-    room.submitBid(order[0], 'PASS')
-    room.submitBid(order[1], 'PASS')
     expect(room.phase).toBe('ROUND_14_LOOK_PHASE')
 
     const beforeLook = room.toClientState(order[0])
@@ -312,42 +330,40 @@ describe('GameRoom — runda 14, cartea ascunsă (LOOK / DON\'T LOOK)', () => {
     room.submitPeek(order[0], 'peek')
     const afterLook = room.toClientState(order[0])
     expect(afterLook.hiddenCardPending).toBe(false)
-    expect(afterLook.myHand.length).toBe(1) // acum vede cartea
+    expect(afterLook.myHand.length).toBe(1) // acum vede cartea, înainte să declare
 
     // celălalt jucător, care încă n-a răspuns, rămâne cu cartea ascunsă
     const otherStillHidden = room.toClientState(order[1])
     expect(otherStillHidden.hiddenCardPending).toBe(true)
     expect(otherStillHidden.myHand).toEqual([])
+    // și faza rămâne ROUND_14_LOOK_PHASE până răspunde și el
+    expect(room.phase).toBe('ROUND_14_LOOK_PHASE')
   })
 
-  it('Test C: alegerea DON\'T LOOK (noPeek) păstrează cartea ascunsă pentru totdeauna acelui jucător', () => {
+  it("Test C: alegerea DON'T LOOK (noPeek) păstrează cartea ascunsă, inclusiv în timpul cererii", () => {
     const room = makeRoom(2)
     room.startGame('p0')
     driveToFinalRound(room)
     const order = room.toClientState('p0').biddingOrder
-    room.submitBid(order[0], 'PASS')
-    room.submitBid(order[1], 'PASS')
 
     room.submitPeek(order[0], 'noPeek')
     const state = room.toClientState(order[0])
     expect(state.hiddenCardPending).toBe(true)
     expect(state.myHand).toEqual([])
-    // rămâne ascunsă și după ce ambii au răspuns (fază de joc)
+
     room.submitPeek(order[1], 'peek')
-    expect(room.phase).toBe('PLAYING_TRICK')
-    const stillHidden = room.toClientState(order[0])
-    expect(stillHidden.hiddenCardPending).toBe(true)
-    expect(stillHidden.myHand).toEqual([])
-    expect(stillHidden.validCardIds).toEqual([]) // nu scurgem id-ul cărții (rang+culoare)
+    expect(room.phase).toBe('BIDDING') // acum, DUPĂ decizie, începe faza de cereri
+
+    const duringBid = room.toClientState(order[0])
+    expect(duringBid.hiddenCardPending).toBe(true)
+    expect(duringBid.myHand).toEqual([])
   })
 
-  it('Test D: nu poți schimba decizia (LOOK apoi DON\'T LOOK, sau invers) — a doua încercare e respinsă', () => {
+  it("Test D: nu poți schimba decizia (LOOK apoi DON'T LOOK, sau invers) — a doua încercare e respinsă", () => {
     const room = makeRoom(2)
     room.startGame('p0')
     driveToFinalRound(room)
     const order = room.toClientState('p0').biddingOrder
-    room.submitBid(order[0], 'PASS')
-    room.submitBid(order[1], 'PASS')
 
     room.submitPeek(order[0], 'peek')
     expect(() => room.submitPeek(order[0], 'noPeek')).toThrow()
@@ -359,9 +375,9 @@ describe('GameRoom — runda 14, cartea ascunsă (LOOK / DON\'T LOOK)', () => {
     room.startGame('p0')
     driveToFinalRound(room)
     const order = room.toClientState('p0').biddingOrder
-    for (const id of order) room.submitBid(id, 'PASS')
-    // toți răspund "nu m-am uitat"
     for (const id of order) room.submitPeek(id, 'noPeek')
+    expect(room.phase).toBe('BIDDING')
+    for (const id of order) room.submitBid(id, 'PASS')
     expect(room.phase).toBe('PLAYING_TRICK')
     for (const id of order) {
       const s = room.toClientState(id)
@@ -375,12 +391,9 @@ describe('GameRoom — runda 14, cartea ascunsă (LOOK / DON\'T LOOK)', () => {
     room.startGame('p0')
     driveToFinalRound(room)
     const order = room.toClientState('p0').biddingOrder
-    room.submitBid(order[0], 'PASS')
-    room.submitBid(order[1], 'PASS')
     room.submitPeek(order[0], 'peek')
 
     const stateForOpponent = room.toClientState(order[1])
-    // starea celuilalt jucător nu conține nicăieri cartea lui order[0]
     const serialized = JSON.stringify(stateForOpponent)
     const myRevealedCard = room.toClientState(order[0]).myHand[0]
     expect(serialized.includes(`"${myRevealedCard.rank}"`) && serialized.includes(`"${myRevealedCard.suit}"`)).toBe(
@@ -388,18 +401,59 @@ describe('GameRoom — runda 14, cartea ascunsă (LOOK / DON\'T LOOK)', () => {
     )
   })
 
-  it('Test G: scorul corect se aplică pentru LOOK vs DON\'T LOOK (regulile existente, secțiunile 22-23)', () => {
+  it('PASS funcționează după LOOK', () => {
     const room = makeRoom(2)
     room.startGame('p0')
     driveToFinalRound(room)
     const order = room.toClientState('p0').biddingOrder
-    room.submitBid(order[0], 'PASS') // acest jucător va alege "nu m-am uitat"
-    room.submitBid(order[1], 'PASS') // acesta va alege "m-am uitat"
-    room.submitPeek(order[0], 'noPeek')
+    room.submitPeek(order[0], 'peek')
     room.submitPeek(order[1], 'peek')
+    expect(room.phase).toBe('BIDDING')
+    expect(() => room.submitBid(order[0], 'PASS')).not.toThrow()
+  })
+
+  it('CERE 1 funcționează după LOOK', () => {
+    const room = makeRoom(2)
+    room.startGame('p0')
+    driveToFinalRound(room)
+    const order = room.toClientState('p0').biddingOrder
+    room.submitPeek(order[0], 'peek')
+    room.submitPeek(order[1], 'peek')
+    expect(() => room.submitBid(order[0], 1)).not.toThrow()
+  })
+
+  it("PASS funcționează după DON'T LOOK", () => {
+    const room = makeRoom(2)
+    room.startGame('p0')
+    driveToFinalRound(room)
+    const order = room.toClientState('p0').biddingOrder
+    room.submitPeek(order[0], 'noPeek')
+    room.submitPeek(order[1], 'noPeek')
+    expect(() => room.submitBid(order[0], 'PASS')).not.toThrow()
+  })
+
+  it("CERE 1 funcționează după DON'T LOOK (joc orb ulterior)", () => {
+    const room = makeRoom(2)
+    room.startGame('p0')
+    driveToFinalRound(room)
+    const order = room.toClientState('p0').biddingOrder
+    room.submitPeek(order[0], 'noPeek')
+    room.submitPeek(order[1], 'noPeek')
+    expect(() => room.submitBid(order[0], 1)).not.toThrow()
+  })
+
+  it("Test G: scorul corect se aplică pentru LOOK vs DON'T LOOK (regulile existente, secțiunile 22-23)", () => {
+    const room = makeRoom(2)
+    room.startGame('p0')
+    driveToFinalRound(room)
+    const order = room.toClientState('p0').biddingOrder
+    room.submitPeek(order[0], 'noPeek') // acest jucător nu se uită
+    room.submitPeek(order[1], 'peek') // acesta se uită
+    expect(room.phase).toBe('BIDDING')
+    room.submitBid(order[0], 'PASS')
+    room.submitBid(order[1], 'PASS')
     expect(room.phase).toBe('PLAYING_TRICK')
 
-    // jucăm orbește pentru order[0] (playHiddenCard), normal pentru order[1]
     while (room.phase === 'PLAYING_TRICK' || room.phase === 'TRICK_RESULT') {
       if (room.phase === 'PLAYING_TRICK') {
         const turn = room.currentTurnPlayerId!
@@ -411,14 +465,11 @@ describe('GameRoom — runda 14, cartea ascunsă (LOOK / DON\'T LOOK)', () => {
     }
     expect(room.phase).toBe('ROUND_RESULT')
     const roundScores = room.history.find((h) => h.round === 14)!.scores
-    // PASS + nu s-a uitat + nu a luat mâna => +30 ; PASS + s-a uitat + a luat mâna => +1
-    // (exact una din cele două câștigă mâna unică a rundei — verificăm ambele valori posibile corect)
-    const winnerId = room.finalRanking === null ? null : null
-    void winnerId
     const scoreP0 = roundScores[order[0]]
     const scoreP1 = roundScores[order[1]]
-    // ambele scoruri trebuie să fie dintre valorile definite de regulile PASS+runda14
+    // PASS + nu s-a uitat + nu a luat => +30 ; PASS + nu s-a uitat + a luat => +1
     expect([30, 1]).toContain(scoreP0)
+    // PASS + s-a uitat + nu a luat => +15 ; PASS + s-a uitat + a luat => +1
     expect([15, 1]).toContain(scoreP1)
   })
 })
@@ -429,10 +480,10 @@ describe('GameRoom — playHiddenCard, validare', () => {
     room.startGame('p0')
     driveToFinalRound(room)
     const order = room.toClientState('p0').biddingOrder
-    room.submitBid(order[0], 'PASS')
-    room.submitBid(order[1], 'PASS')
     room.submitPeek(order[0], 'peek')
     room.submitPeek(order[1], 'peek')
+    room.submitBid(order[0], 'PASS')
+    room.submitBid(order[1], 'PASS')
     expect(() => room.playHiddenCard(order[0])).toThrow()
   })
 

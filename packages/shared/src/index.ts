@@ -35,8 +35,12 @@ export function cardId(c: Card): string {
   return `${c.rank}-${c.suit}`
 }
 
-export function isJackOfClubs(c: Card): boolean {
-  return c.suit === 'clubs' && c.rank === 'J'
+/**
+ * Cartea specială a jocului ("J de verde"): J♠ (Jack of Spades/Pică).
+ * IMPORTANT: în această variantă a jocului, verde = Pică (Spades), NU Trefla/Clubs.
+ */
+export function isSpecialJack(c: Card): boolean {
+  return c.suit === 'spades' && c.rank === 'J'
 }
 
 /** Numărul de cărți distribuite fiecărui jucător, pentru rundele 1-14. */

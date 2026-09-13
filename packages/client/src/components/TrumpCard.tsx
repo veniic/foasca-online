@@ -1,4 +1,4 @@
-import { ClientGameState, SUIT_SYMBOL, isJackOfClubs } from '@foaica/shared'
+import { ClientGameState, SUIT_SYMBOL, isSpecialJack } from '@foaica/shared'
 
 interface Props {
   state: ClientGameState
@@ -6,7 +6,7 @@ interface Props {
 
 export default function TrumpCard({ state }: Props) {
   if (state.noTrump && state.trumpCard) {
-    // J♣ a fost cartea de coz => nu există coz în rundă. Afișăm totuși cartea
+    // J♠ (J de verde) a fost cartea de coz => nu există coz în rundă. Afișăm totuși cartea
     // reală (e important vizual să se vadă CE a fost jucat, nu doar un text),
     // dar marcată clar drept "fără coz".
     return (
@@ -17,7 +17,7 @@ export default function TrumpCard({ state }: Props) {
           <span className="self-end rotate-180 text-xs font-bold">{state.trumpCard.rank}</span>
         </div>
         <span className="whitespace-nowrap rounded bg-felt-900/90 px-1.5 py-0.5 text-[9px] font-medium text-paper/60">
-          fără coz (J♣)
+          fără coz (J♠)
         </span>
       </div>
     )
@@ -26,7 +26,7 @@ export default function TrumpCard({ state }: Props) {
   if (!state.trumpSuit || !state.trumpCard) return null
 
   const isRed = state.trumpSuit === 'hearts' || state.trumpSuit === 'diamonds'
-  const special = isJackOfClubs(state.trumpCard)
+  const special = isSpecialJack(state.trumpCard)
 
   return (
     <div className="flex flex-col items-center gap-1">

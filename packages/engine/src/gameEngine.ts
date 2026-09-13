@@ -15,11 +15,11 @@ import {
   Suit,
   TOTAL_ROUNDS,
 } from '@foaica/shared'
-import { createDeck, shuffleDeck } from './deck'
-import { determineTrump } from './trump'
-import { getValidCards, determineTrickWinner } from './rules'
-import { getBiddingOrder, getValidBidOptions, isBidValid } from './bidding'
-import { calculateBile, calculateRoundScore } from './scoring'
+import { createDeck, shuffleDeck } from './deck.js'
+import { determineTrump } from './trump.js'
+import { getValidCards, determineTrickWinner } from './rules.js'
+import { getBiddingOrder, getValidBidOptions, isBidValid } from './bidding.js'
+import { calculateBile, calculateRoundScore } from './scoring.js'
 
 export class EngineError extends Error {}
 
@@ -191,12 +191,21 @@ export class GameRoom {
 
     this.biddingOrder = getBiddingOrder(this.hostId, this.seatOrder, this.round)
     this.biddingPointer = 0
-    this.currentTurnPlayerId = this.biddingOrder[0]
     this.currentTrick = []
     this.leadSuit = null
     this.tricksPlayedThisRound = 0
     this.lastTrickWinnerId = null
-    this.phase = 'BIDDING'
+
+    if (this.round === FINAL_ROUND) {
+      // Runda 14: jucătorul trebuie să decidă ÎNTÂI dacă se uită sau nu la
+      // carte, ÎNAINTE de a putea alege PASS sau CERE 1 (cerință explicită —
+      // ordinea nu mai e "cerere apoi decizie", ci "decizie apoi cerere").
+      this.currentTurnPlayerId = null
+      this.phase = 'ROUND_14_LOOK_PHASE'
+    } else {
+      this.currentTurnPlayerId = this.biddingOrder[0]
+      this.phase = 'BIDDING'
+    }
   }
 
   // ---------------------------------------------------------------------
@@ -220,18 +229,14 @@ export class GameRoom {
 
     if (this.biddingPointer >= this.biddingOrder.length) {
       this.currentTurnPlayerId = null
-      if (this.round === FINAL_ROUND) {
-        this.phase = 'ROUND_14_LOOK_PHASE'
-      } else {
-        this.beginPlayingPhase()
-      }
+      this.beginPlayingPhase()
     } else {
       this.currentTurnPlayerId = this.biddingOrder[this.biddingPointer]
     }
   }
 
   // ---------------------------------------------------------------------
-  // Runda 14 — "te-ai uitat la carte?"
+  // Runda 14 — "te-ai uitat la carte?" (ÎNAINTE de cerere)
   // ---------------------------------------------------------------------
 
   submitPeek(playerId: string, choice: PeekChoice): void {
@@ -244,7 +249,9 @@ export class GameRoom {
 
     const allAnswered = this.seatOrder.every((id) => this.players.get(id)!.hasAnsweredPeek)
     if (allAnswered) {
-      this.beginPlayingPhase()
+      // Toți au decis dacă se uită sau nu — abia acum începe faza de cereri.
+      this.currentTurnPlayerId = this.biddingOrder[0]
+      this.phase = 'BIDDING'
     }
   }
 

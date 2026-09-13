@@ -2,6 +2,12 @@
   "name": "@foaica/shared",
   "version": "1.0.0",
   "type": "module",
-  "main": "src/index.ts",
-  "types": "src/index.ts"
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3"
+  }
 }

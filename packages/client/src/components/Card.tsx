@@ -1,4 +1,4 @@
-import { Card as CardType, SUIT_SYMBOL, isJackOfClubs } from '@foaica/shared'
+import { Card as CardType, SUIT_SYMBOL, isSpecialJack } from '@foaica/shared'
 
 interface FaceUpProps {
   card: CardType
@@ -17,7 +17,7 @@ const SIZE_CLASSES: Record<string, string> = {
 
 export function PlayingCard({ card, size = 'md', selectable, disabled, highlight, onClick }: FaceUpProps) {
   const isRed = card.suit === 'hearts' || card.suit === 'diamonds'
-  const special = isJackOfClubs(card)
+  const special = isSpecialJack(card)
   return (
     <button
       type="button"

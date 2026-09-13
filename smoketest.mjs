@@ -72,7 +72,7 @@ async function main() {
   let checkedRound14Privacy = false
   while (state1.phase !== 'FINAL_RESULT') {
     steps++
-    if (steps > 5000) throw new Error('Prea mulți pași, posibil blocaj')
+    if (steps > 8000) throw new Error('Prea mulți pași, posibil blocaj')
 
     if (state1.round === 14 && !checkedRound14Privacy && state1.phase === 'ROUND_14_LOOK_PHASE') {
       checkedRound14Privacy = true

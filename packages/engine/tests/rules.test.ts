@@ -25,16 +25,16 @@ describe('getValidCards', () => {
     expect(ids(valid)).toEqual([cardId({ suit: 'hearts', rank: '8' })])
   })
 
-  it('J♣ poate fi jucat oricând, chiar dacă are forma cerută (exemplul din secțiunea 3)', () => {
+  it('J♠ (J de verde) poate fi jucat oricând, chiar dacă are forma cerută (exemplul din secțiunea 3)', () => {
     const hand: Card[] = [
       { suit: 'hearts', rank: '6' },
-      { suit: 'clubs', rank: 'J' },
+      { suit: 'spades', rank: 'J' },
     ]
     const valid = getValidCards(hand, 'hearts', 'diamonds', false)
     expect(ids(valid)).toEqual(
       ids([
         { suit: 'hearts', rank: '6' },
-        { suit: 'clubs', rank: 'J' },
+        { suit: 'spades', rank: 'J' },
       ])
     )
   })
@@ -74,13 +74,13 @@ describe('getValidCards', () => {
     expect(ids(valid)).toEqual([cardId({ suit: 'hearts', rank: '9' })])
   })
 
-  it('în runda "noTrump" (J♣ e coz), J♣ din mână e o carte normală, fără puteri speciale', () => {
+  it('în runda "noTrump" (J♠ verde e coz), J♠ din mână e o carte normală, fără puteri speciale', () => {
     const hand: Card[] = [
       { suit: 'hearts', rank: '6' },
-      { suit: 'clubs', rank: 'J' },
+      { suit: 'spades', rank: 'J' },
     ]
     const valid = getValidCards(hand, 'hearts', null, true)
-    // Trebuie să respecte forma cerută (hearts); J♣ nu are voie să sară peste regulă.
+    // Trebuie să respecte forma cerută (hearts); J♠ nu are voie să sară peste regulă aici.
     expect(ids(valid)).toEqual([cardId({ suit: 'hearts', rank: '6' })])
   })
 })
@@ -130,12 +130,12 @@ describe('determineTrickWinner', () => {
     expect(winner).toBe('p2')
   })
 
-  it('J♣ câștigă întotdeauna dacă e jucat (secțiunea 3)', () => {
+  it('J♠ (J de verde) câștigă întotdeauna dacă e jucat (secțiunea 3)', () => {
     const winner = determineTrickWinner(
       [
         { playerId: 'p1', card: { suit: 'hearts', rank: 'A' } },
         { playerId: 'p2', card: { suit: 'hearts', rank: 'K' } },
-        { playerId: 'p3', card: { suit: 'clubs', rank: 'J' } },
+        { playerId: 'p3', card: { suit: 'spades', rank: 'J' } },
       ],
       'hearts',
       'hearts',
@@ -150,7 +150,7 @@ describe('determineTrickWinner', () => {
         { playerId: 'p1', card: { suit: 'spades', rank: 'A' } },
         { playerId: 'p2', card: { suit: 'hearts', rank: 'K' } },
         { playerId: 'p3', card: { suit: 'diamonds', rank: 'Q' } },
-        { playerId: 'p4', card: { suit: 'clubs', rank: 'J' } },
+        { playerId: 'p4', card: { suit: 'clubs', rank: 'J' } }, // J normal (nu e de pică), fără puteri speciale în noTrump
       ],
       'spades',
       null,
@@ -161,20 +161,21 @@ describe('determineTrickWinner', () => {
 })
 
 // ---------------------------------------------------------------------------
-// "J de verde" = J♣ (Trefla/Verde), cartea specială. Testele de mai jos
-// confirmă explicit ierarhia și comportamentul cerut: J de verde > A > K > Q >
-// J > 10 > ... , joc liber (nu respectă obligația de formă/coz), și victorie
-// asupra oricărei cărți normale, inclusiv Asul.
+// "J de verde" = J♠ (Pică/Spades), cartea specială a jocului.
+// IMPORTANT: verde = Pică (Spades) în această variantă, NU Trefla/Clubs.
+// Testele de mai jos confirmă explicit ierarhia și comportamentul cerut:
+// J de verde > A > K > Q > J > 10 > ..., joc liber (nu respectă obligația de
+// formă/coz), și victorie asupra oricărei cărți normale, inclusiv Asul.
 // ---------------------------------------------------------------------------
-describe('J de verde (J♣) — carte specială', () => {
+describe('J de verde (J♠ / Pică) — carte specială', () => {
   it('Test A: J de verde e mai puternic decât Asul', () => {
     const winner = determineTrickWinner(
       [
         { playerId: 'p1', card: { suit: 'hearts', rank: 'A' } },
-        { playerId: 'p2', card: { suit: 'clubs', rank: 'J' } },
+        { playerId: 'p2', card: { suit: 'spades', rank: 'J' } },
       ],
       'hearts',
-      'spades',
+      'diamonds',
       false
     )
     expect(winner).toBe('p2')
@@ -186,7 +187,7 @@ describe('J de verde (J♣) — carte specială', () => {
       const winner = determineTrickWinner(
         [
           { playerId: 'opponent', card: { suit: 'hearts', rank } },
-          { playerId: 'jdeverde', card: { suit: 'clubs', rank: 'J' } },
+          { playerId: 'jdeverde', card: { suit: 'spades', rank: 'J' } },
         ],
         'hearts',
         'diamonds',
@@ -196,92 +197,98 @@ describe('J de verde (J♣) — carte specială', () => {
     }
   })
 
+  it('Test (regresie): J♣ (Trefla) NU este cartea specială — nu câștigă automat', () => {
+    const winner = determineTrickWinner(
+      [
+        { playerId: 'aceWins', card: { suit: 'hearts', rank: 'A' } },
+        { playerId: 'clubsJack', card: { suit: 'clubs', rank: 'J' } },
+      ],
+      'hearts',
+      'diamonds',
+      false
+    )
+    // J♣ e doar un J normal (poziția lui în RANK_POWER), nu câștigă mâna.
+    expect(winner).toBe('aceWins')
+  })
+
   it('Test C: J de verde poate fi jucat oricând, chiar dacă jucătorul are forma cerută', () => {
     const hand: Card[] = [
       { suit: 'hearts', rank: 'A' }, // are forma cerută (hearts)
-      { suit: 'clubs', rank: 'J' }, // J de verde
+      { suit: 'spades', rank: 'J' }, // J de verde
     ]
-    const valid = getValidCards(hand, 'hearts', 'spades', false)
-    expect(valid.some((c) => c.suit === 'clubs' && c.rank === 'J')).toBe(true)
+    const valid = getValidCards(hand, 'hearts', 'diamonds', false)
+    expect(valid.some((c) => c.suit === 'spades' && c.rank === 'J')).toBe(true)
   })
 
   it('Test C (variantă): J de verde poate fi jucat chiar dacă jucătorul are cozul', () => {
     const hand: Card[] = [
-      { suit: 'spades', rank: 'K' }, // are cozul (spades)
-      { suit: 'clubs', rank: 'J' },
+      { suit: 'diamonds', rank: 'K' }, // are cozul (diamonds)
+      { suit: 'spades', rank: 'J' },
     ]
-    // Nu are forma cerută (hearts), dar are cozul (spades) — normal ar fi obligat
-    // să joace cozul; J de verde rămâne totuși o opțiune validă.
-    const valid = getValidCards(hand, 'hearts', 'spades', false)
-    expect(valid.some((c) => c.suit === 'clubs' && c.rank === 'J')).toBe(true)
+    // Nu are forma cerută (hearts), dar are cozul (diamonds) — normal ar fi
+    // obligat să joace cozul; J de verde rămâne totuși o opțiune validă.
+    const valid = getValidCards(hand, 'hearts', 'diamonds', false)
+    expect(valid.some((c) => c.suit === 'spades' && c.rank === 'J')).toBe(true)
   })
 
   it('Test D: într-o mână reală, J de verde câștigă împotriva unui As jucat de alt jucător', () => {
     const winner = determineTrickWinner(
       [
         { playerId: 'A', card: { suit: 'diamonds', rank: 'A' } },
-        { playerId: 'B', card: { suit: 'clubs', rank: 'J' } },
+        { playerId: 'B', card: { suit: 'spades', rank: 'J' } },
         { playerId: 'C', card: { suit: 'diamonds', rank: 'K' } },
       ],
       'diamonds',
-      'spades',
+      'hearts',
       false
     )
     expect(winner).toBe('B')
   })
 
   it('Test G: obligația de a urma forma cerută NU se aplică dacă jucătorul alege J de verde', () => {
-    // Jucătorul ARE forma cerută (poate fi obligat normal să o joace), dar
-    // getValidCards trebuie să includă și J de verde ca alternativă validă —
-    // motorul nu trebuie să forțeze alegerea formei cerute în locul lui J♣.
     const hand: Card[] = [
-      { suit: 'spades', rank: 'Q' },
-      { suit: 'spades', rank: '9' },
-      { suit: 'clubs', rank: 'J' },
+      { suit: 'hearts', rank: 'Q' },
+      { suit: 'hearts', rank: '9' },
+      { suit: 'spades', rank: 'J' },
     ]
-    const valid = getValidCards(hand, 'spades', 'hearts', false)
+    const valid = getValidCards(hand, 'hearts', 'diamonds', false)
     const suits = valid.map((c) => `${c.rank}-${c.suit}`)
-    expect(suits).toContain('Q-spades')
-    expect(suits).toContain('9-spades')
-    expect(suits).toContain('J-clubs') // J de verde rămâne disponibil, pe lângă forma cerută
+    expect(suits).toContain('Q-hearts')
+    expect(suits).toContain('9-hearts')
+    expect(suits).toContain('J-spades') // J de verde rămâne disponibil, pe lângă forma cerută
   })
 
   it('Test F: ordinea completă plasează J de verde deasupra lui A și a tuturor celorlalte cărți', () => {
-    // J de verde nu se compară prin RANK_POWER (e un caz special separat), dar
-    // efectiv câștigă mereu — testăm asta direct împotriva celei mai mari cărți
-    // posibile din ierarhia normală (Asul de coz, care altfel ar câștiga orice).
     const winner = determineTrickWinner(
       [
         { playerId: 'trumpAce', card: { suit: 'hearts', rank: 'A' } }, // As de coz — normal ar câștiga tot
-        { playerId: 'jdeverde', card: { suit: 'clubs', rank: 'J' } },
+        { playerId: 'jdeverde', card: { suit: 'spades', rank: 'J' } },
       ],
-      'spades',
+      'diamonds',
       'hearts',
       false
     )
     expect(winner).toBe('jdeverde')
   })
 
-  it('Test E: când J de verde este cartea de coz (revelată), NU există coz în rundă (regulă originală, secțiunea 5)', () => {
-    // Această regulă a fost specificată explicit și exemplificată în cerințele
-    // inițiale ale jocului: dacă J♣ e cartea întoarsă pentru coz, nu există coz
-    // în acea rundă, iar dacă J♣ ajunge ulterior în mâna unui jucător, e un J
-    // OBIȘNUIT (fără puteri speciale), pentru că regula specială a lui J♣ se
-    // aplică DOAR când e jucat dintr-o mână, nu când e cartea de coz. Test de
-    // regresie: NU schimbăm această regulă fără confirmare explicită, pentru
-    // că cerințele mai noi ("J de verde păstrează mereu puterea maximă, chiar
-    // și ca și coz") par să o contrazică — vezi raportul final al acestei ture.
+  it('Test E: J de verde rămâne cea mai puternică chiar când Pică (verde) este chiar cozul rundei', () => {
+    // Cerința curentă: "regula specială trebuie să funcționeze și când verde
+    // e culoarea de coz". Testăm exact asta — trumpSuit = 'spades', J♠ jucat
+    // dintr-o mână trebuie să câștige necondiționat, la fel ca în orice altă
+    // rundă cu coz. (NOTĂ: acest test NU acoperă cazul separat, nerezolvat
+    // încă, în care J♠ este chiar cartea întoarsă pentru coz — vezi trump.ts,
+    // unde regula inițială "no-trump dacă J-ul special e cartea de coz" a fost
+    // păstrată neschimbată, pentru că nu a fost cerută explicit modificarea ei
+    // în această tură.)
     const winner = determineTrickWinner(
       [
-        { playerId: 'p1', card: { suit: 'spades', rank: 'A' } },
-        { playerId: 'p2', card: { suit: 'hearts', rank: 'K' } },
-        { playerId: 'p3', card: { suit: 'diamonds', rank: 'Q' } },
-        { playerId: 'p4', card: { suit: 'clubs', rank: 'J' } }, // J normal, NU J de verde, în runda fără coz
+        { playerId: 'p1', card: { suit: 'diamonds', rank: 'A' } },
+        { playerId: 'p2', card: { suit: 'spades', rank: 'J' } },
       ],
-      'spades',
-      null,
-      true // noTrump = true, pentru că J♣ a fost cartea de coz revelată
+      'diamonds',
+      'spades', // verde (pică) e cozul rundei
+      false
     )
-    expect(winner).toBe('p1') // câștigă Asul, nu J-ul de clubs — el nu mai e special aici
+    expect(winner).toBe('p2')
   })
 })

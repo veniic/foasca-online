@@ -1,4 +1,4 @@
-import { Card, cardId, isJackOfClubs, RANK_POWER, Suit } from '@foaica/shared'
+import { Card, cardId, isSpecialJack, RANK_POWER, Suit } from '@foaica/shared'
 
 function dedupeById(cards: Card[]): Card[] {
   const seen = new Set<string>()
@@ -18,11 +18,11 @@ function dedupeById(cards: Card[]): Card[] {
  * - mâna lui curentă
  * - forma cerută a mânii (null dacă el este cel care deschide mâna)
  * - cozul rundei (null dacă `noTrump` e adevărat)
- * - `noTrump`: adevărat dacă J♣ a fost cartea de coz (nicio culoare nu e coz)
+ * - `noTrump`: adevărat dacă J♠ (J de verde) a fost cartea de coz (nicio culoare nu e coz)
  *
  * Reguli (secțiunile 12-15 din specificație):
- * - J♣ poate fi jucat oricând, DAR doar cât timp există un coz în rundă
- *   (dacă runda e "noTrump", J♣ e o carte normală, fără puteri speciale).
+ * - J♠ (J de verde) poate fi jucat oricând, DAR doar cât timp există un coz în rundă
+ *   (dacă runda e "noTrump", J♠ (J de verde) e o carte normală, fără puteri speciale).
  * - Dacă cel care deschide, poate juca orice carte.
  * - Altfel, dacă are cartea din forma cerută, trebuie să joace acea formă.
  * - Altfel, dacă are coz, trebuie să joace cozul.
@@ -34,7 +34,7 @@ export function getValidCards(
   trumpSuit: Suit | null,
   noTrump: boolean
 ): Card[] {
-  const jackOfClubs = !noTrump ? hand.find(isJackOfClubs) : undefined
+  const specialJack = !noTrump ? hand.find(isSpecialJack) : undefined
 
   // Cel care deschide mâna poate juca orice carte.
   if (leadSuit === null) {
@@ -43,13 +43,13 @@ export function getValidCards(
 
   const leadSuitCards = hand.filter((c) => c.suit === leadSuit)
   if (leadSuitCards.length > 0) {
-    return jackOfClubs ? dedupeById([...leadSuitCards, jackOfClubs]) : leadSuitCards
+    return specialJack ? dedupeById([...leadSuitCards, specialJack]) : leadSuitCards
   }
 
   if (!noTrump && trumpSuit) {
     const trumpCards = hand.filter((c) => c.suit === trumpSuit)
     if (trumpCards.length > 0) {
-      return jackOfClubs ? dedupeById([...trumpCards, jackOfClubs]) : trumpCards
+      return specialJack ? dedupeById([...trumpCards, specialJack]) : trumpCards
     }
   }
 
@@ -66,13 +66,13 @@ export interface Play {
  * Stabilește câștigătorul unei mâini.
  *
  * Cazul normal (există coz în rundă):
- *   1. J♣, dacă a fost jucat, câștigă întotdeauna.
+ *   1. J♠ (J de verde), dacă a fost jucat, câștigă întotdeauna.
  *   2. Altfel, dacă există cărți de coz jucate, câștigă cea mai mare dintre ele.
  *   3. Altfel, câștigă cea mai mare carte din forma cerută.
  *
- * Cazul special "noTrump" (J♣ a fost cartea de coz, deci nu există coz):
+ * Cazul special "noTrump" (J♠ (J de verde) a fost cartea de coz, deci nu există coz):
  *   Se compară TOATE cărțile jucate doar după valoare, indiferent de culoare
- *   (A > K > Q > J > 10 > 9 > 8 > 7 > 6). J♣ e o carte normală în acest caz.
+ *   (A > K > Q > J > 10 > 9 > 8 > 7 > 6). J♠ (J de verde) e o carte normală în acest caz.
  *   Presupunere documentată: la egalitate de valoare (culori diferite, aceeași
  *   valoare), câștigă cartea jucată prima — regulă neacoperită explicit în cerințe.
  */
@@ -90,8 +90,8 @@ export function determineTrickWinner(
     return bestByRankPower(plays)
   }
 
-  const jackOfClubsPlay = plays.find((p) => isJackOfClubs(p.card))
-  if (jackOfClubsPlay) return jackOfClubsPlay.playerId
+  const specialJackPlay = plays.find((p) => isSpecialJack(p.card))
+  if (specialJackPlay) return specialJackPlay.playerId
 
   if (trumpSuit) {
     const trumpPlays = plays.filter((p) => p.card.suit === trumpSuit)

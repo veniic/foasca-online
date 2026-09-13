@@ -74,7 +74,7 @@ VITE_SERVER_URL=http://localhost:3001
 ## 4. Teste
 
 Motorul de joc are 62 de teste unitare/integrare (Vitest), acoperind exact cerințele:
-pachet, amestecare, distribuire 2–6 jucători, cozul, J♣ special, J♣-ca-coz, regula
+pachet, amestecare, distribuire 2–6 jucători, cozul, J♠ (J de verde) special, J♠-ca-coz, regula
 formei, obligația de coz, câștigătorul mânii (inclusiv mai mulți coji și J♣),
 rotația cererilor, regula sumei, PASS, toate scorurile (inclusiv runda 14),
 confidențialitatea mâinilor, reconectarea, transferul de host, un joc complet
