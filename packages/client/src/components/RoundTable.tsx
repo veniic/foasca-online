@@ -27,15 +27,14 @@ export default function RoundTable({ state }: Props) {
       {/* Ovalul mesei */}
       <div className="absolute inset-[6%] rounded-[50%] border-4 border-felt-600/60 bg-gradient-to-br from-felt-700 to-felt-900 shadow-inner" />
 
-      {/* Cozul — poziționat logic, în colțul din dreapta-sus al mesei */}
-      <div className="absolute right-[10%] top-[8%] z-20">
+      {/* Cozul — poziționat în CENTRUL mesei, ca element principal de joc.
+          Statusul central (dacă există) e grupat DIRECT sub el, la o distanță fixă mică,
+          astfel încât grupul rămâne mereu în mijlocul mesei și nu se mai suprapune
+          cu numele/eticheta locului meu de jos (asta cauza suprapunerea de text). */}
+      <div className="absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5">
         <TrumpCard state={state} />
-      </div>
-
-      {/* Statusul central, când nu sunt cărți pe masă */}
-      {state.currentTrick.length === 0 && (
-        <div className="absolute left-1/2 top-1/2 z-10 w-40 -translate-x-1/2 -translate-y-1/2 text-center">
-          <p className="text-xs leading-snug text-paper/40">
+        {state.currentTrick.length === 0 && (
+          <p className="w-36 text-center text-[11px] leading-snug text-paper/40">
             {state.phase === 'BIDDING'
               ? turnPlayerName
                 ? `${turnPlayerName} declară`
@@ -44,8 +43,8 @@ export default function RoundTable({ state }: Props) {
                 ? 'Runda 14 — decizii…'
                 : 'Masă goală'}
           </p>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Cărțile jucate în mâna curentă, aliniate spre centru pe direcția jucătorului */}
       {state.currentTrick.map((pc) => {
