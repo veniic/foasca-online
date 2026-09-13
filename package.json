@@ -1,0 +1,16 @@
+{
+  "name": "foaica-online",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test:engine": "npm run test --workspace=packages/engine",
+    "dev:server": "npm run dev --workspace=packages/server",
+    "dev:client": "npm run dev --workspace=packages/client",
+    "build:engine": "npm run build --workspace=packages/engine",
+    "build:server": "npm run build --workspace=packages/server",
+    "build:client": "npm run build --workspace=packages/client"
+  }
+}
