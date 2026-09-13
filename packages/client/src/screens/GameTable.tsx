@@ -29,9 +29,13 @@ export default function GameTable({
   const isHost = state.myId === state.hostId
 
   return (
-    <div className="flex min-h-screen flex-col pb-4">
-      {/* Top bar */}
-      <header className="flex items-center justify-between border-b border-felt-700 px-4 py-2">
+    <div className="flex min-h-screen flex-col justify-center pb-4">
+      {/* Top bar — padding-top ține cont și de zona notch-ului pe telefon, ca butonul
+          Scor și textul rundei să nu se lipească de bara de status a telefonului */}
+      <header
+        className="flex items-center justify-between border-b border-felt-700 px-4 pb-2"
+        style={{ paddingTop: 'max(0.9rem, calc(env(safe-area-inset-top) + 0.4rem))' }}
+      >
         <p className="text-xs text-paper/50">
           Runda {state.round}/14 · mâna {Math.min(state.trickNumber, state.cardsThisRound)}/{state.cardsThisRound}
         </p>
@@ -121,7 +125,7 @@ export default function GameTable({
         !state.hiddenCardPending &&
         state.phase !== 'ROUND_RESULT' &&
         state.phase !== 'FINAL_RESULT' && (
-          <div className="mt-auto px-3 pt-2">
+          <div className="mt-3 px-3 pt-2">
             <p className="mb-1 text-center text-xs text-paper/40">
               Cărțile mele
               {state.round === 14 && state.myHand.length > 0 ? ' (te-ai uitat la carte)' : ''}
